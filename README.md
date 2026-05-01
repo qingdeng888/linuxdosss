@@ -1,10 +1,10 @@
-# Linux.do 论坛刷帖助手 v8.4
+# Linux.do 论坛刷帖助手 v8.5
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.8+-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg" alt="Platform">
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
-  <img src="https://img.shields.io/badge/Version-8.4-orange.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-8.5-orange.svg" alt="Version">
 </p>
 
 <p align="center">
@@ -24,6 +24,15 @@
 > **建议**：仅使用自动浏览和点赞功能，谨慎开启自动回复。
 
 ---
+
+## 🎉 v8.5 新功能
+
+- 🎯 **智能话题识别**：自动识别未读话题（小蓝点），优先浏览新内容
+- ✅ **避免重复浏览**：只浏览带小蓝点的未读话题，提高浏览效率
+- 🔄 **正确浏览方式**：点击链接而非直接访问 URL，确保话题计数准确
+- 📊 **适配新版页面**：支持 connect.linux.do 新版 HTML 结构
+- 🔍 **小蓝点验证**：返回板块后验证小蓝点消失，确认话题已读
+- 📝 **详细日志反馈**：显示未读/已读话题数量，浏览状态清晰可见
 
 ## 🎉 v8.4 新功能
 
@@ -214,6 +223,15 @@ python linux_do_gui.py
 所有回复内容均不少于 6 个字，避免被系统判定为无意义回复。
 
 ## 更新日志
+
+### v8.5 (2026-05-01)
+- 🎯 **智能话题识别**：自动识别未读话题（小蓝点标记），优先浏览新内容
+- ✅ **避免重复浏览**：只浏览带 `badge-notification new-topic` 标记的未读话题
+- 🔄 **修复浏览计数**：改用点击链接方式而非直接访问 URL，确保"浏览话题"正确计数
+- 📊 **适配新版页面**：支持 connect.linux.do 新版 HTML 结构（tl3-ring、tl3-bar 等）
+- 🔍 **小蓝点验证**：返回板块列表后验证小蓝点消失，确认话题已被标记为已读
+- 📝 **详细日志反馈**：显示未读/已读话题数量，浏览状态清晰可见
+- 🔧 **关闭定时任务**：默认关闭 GitHub Actions 定时触发，避免错误通知
 
 ### v8.4 (2026-01-25)
 - 🤖 **新增 GitHub Actions 定时运行**：Fork 仓库配置 Secrets 即可每天自动运行

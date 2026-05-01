@@ -40,7 +40,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 
 # 版本信息
-VERSION = "8.4.1"
+VERSION = "8.5.0"
 GITHUB_REPO = "icysaintdx/linuxdosss"
 
 # 跨平台字体配置
