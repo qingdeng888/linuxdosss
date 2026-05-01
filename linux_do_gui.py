@@ -417,51 +417,109 @@ class Bot:
                     nextLevel: '',
                     requirements: []
                 };
-                
-                // 获取用户名和等级
-                const h1 = document.querySelector('h1');
-                if (h1) {
-                    const text = h1.textContent;
-                    const match = text.match(/\\((.+?)\\)\\s*(\\d+)级用户/);
+
+                // 获取用户名（从 card-subtitle 中提取）
+                const subtitle = document.querySelector('.card-subtitle');
+                if (subtitle) {
+                    const text = subtitle.textContent;
+                    const match = text.match(/@([^\\s·]+)/);
                     if (match) {
                         result.username = match[1];
-                        result.level = match[2];
                     }
                 }
-                
-                // 获取下一级要求
-                const h2s = document.querySelectorAll('h2');
-                h2s.forEach(h2 => {
-                    const text = h2.textContent;
-                    if (text.includes('信任级别')) {
-                        const match = text.match(/信任级别\\s*(\\d+)/);
+
+                // 获取下一级要求（从 card-title 中提取）
+                const cardTitle = document.querySelector('.card-title');
+                if (cardTitle) {
+                    const text = cardTitle.textContent;
+                    const match = text.match(/信任级别\\s*(\\d+)/);
+                    if (match) {
+                        result.nextLevel = match[1];
+                        // 当前等级 = 目标等级 - 1
+                        result.level = String(parseInt(match[1]) - 1);
+                    }
+                }
+
+                // 获取活跃程度数据（tl3-ring 结构）
+                const rings = document.querySelectorAll('.tl3-ring');
+                rings.forEach(ring => {
+                    const label = ring.querySelector('.tl3-ring-label');
+                    const current = ring.querySelector('.tl3-ring-current');
+                    const target = ring.querySelector('.tl3-ring-target');
+
+                    if (label && current && target) {
+                        const name = label.textContent.trim();
+                        const currentVal = current.textContent.trim();
+                        const targetVal = target.textContent.replace('/', '').trim();
+
+                        result.requirements.push({
+                            name: name,
+                            current: currentVal,
+                            required: targetVal
+                        });
+                    }
+                });
+
+                // 获取互动参与数据（tl3-bar 结构）
+                const bars = document.querySelectorAll('.tl3-bar-item');
+                bars.forEach(bar => {
+                    const label = bar.querySelector('.tl3-bar-label');
+                    const nums = bar.querySelector('.tl3-bar-nums');
+
+                    if (label && nums) {
+                        const name = label.textContent.trim();
+                        const numsText = nums.textContent.trim();
+                        const match = numsText.match(/(\\d+)\\/(\\d+)/);
+
                         if (match) {
-                            result.nextLevel = match[1];
+                            result.requirements.push({
+                                name: name,
+                                current: match[1],
+                                required: match[2]
+                            });
                         }
                     }
                 });
-                
-                // 获取升级要求表格
-                const tables = document.querySelectorAll('table');
-                tables.forEach(table => {
-                    const rows = table.querySelectorAll('tr');
-                    rows.forEach(row => {
-                        const cells = row.querySelectorAll('td');
-                        if (cells.length >= 3) {
-                            const name = cells[0].textContent.trim();
-                            const current = cells[1].textContent.trim();
-                            const required = cells[2].textContent.trim();
-                            if (name && current && required && name !== '要求') {
-                                result.requirements.push({
-                                    name: name,
-                                    current: current,
-                                    required: required
-                                });
-                            }
+
+                // 获取合规记录数据（tl3-quota 结构）
+                const quotas = document.querySelectorAll('.tl3-quota-card');
+                quotas.forEach(quota => {
+                    const label = quota.querySelector('.tl3-quota-label');
+                    const nums = quota.querySelector('.tl3-quota-nums');
+
+                    if (label && nums) {
+                        const name = label.textContent.trim();
+                        const numsText = nums.textContent.trim();
+                        const match = numsText.match(/(\\d+)\\s*\\/\\s*(\\d+)/);
+
+                        if (match) {
+                            result.requirements.push({
+                                name: name,
+                                current: match[1],
+                                required: match[2]
+                            });
                         }
-                    });
+                    }
                 });
-                
+
+                // 获取禁言/封禁数据（tl3-veto 结构）
+                const vetos = document.querySelectorAll('.tl3-veto-item');
+                vetos.forEach(veto => {
+                    const label = veto.querySelector('.tl3-veto-label');
+                    const value = veto.querySelector('.tl3-veto-value');
+
+                    if (label && value) {
+                        const name = label.textContent.trim();
+                        const currentVal = value.textContent.trim();
+
+                        result.requirements.push({
+                            name: name,
+                            current: currentVal,
+                            required: '0'
+                        });
+                    }
+                });
+
                 return result;
             }
             return getLevelInfo();
