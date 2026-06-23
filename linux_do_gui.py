@@ -909,6 +909,7 @@ class Bot:
         scroll_count = 0
         current_floor = start_floor
         last_floor = start_floor
+        no_progress_count = 0  # 无进度计数
 
         while (
             (current_floor - start_floor) < target_climb
@@ -918,30 +919,34 @@ class Bot:
             # 快速等待（1-2秒）
             time.sleep(random.uniform(1, 2))
 
-            # 滚动页面
-            scroll_distance = random.randint(400, 800)
+            # 滚动页面（增大滚动距离）
+            scroll_distance = random.randint(800, 1500)
             s.pg.run_js(f"window.scrollBy(0, {scroll_distance})")
             scroll_count += 1
 
-            time.sleep(0.3)
+            time.sleep(0.2)
 
             # 获取当前楼层
             floor_info = s.get_floor_info()
             if floor_info:
+                old_floor = current_floor
                 current_floor = floor_info["current"]
                 if current_floor > last_floor:
                     # 计算本次爬过的楼层数并累加
                     floors_climbed = current_floor - last_floor
                     s.stats["floors"] += floors_climbed
                     last_floor = current_floor
+                    no_progress_count = 0  # 重置无进度计数
 
                     # 实时更新进度和倒计时
                     if s.update_progress:
                         s.update_progress(s.stats)
                     s._update_countdown_display()
+                elif current_floor == old_floor:
+                    no_progress_count += 1
 
-            # 安全检查
-            if scroll_count >= 10:
+            # 安全检查：连续5次无进度或滚动超过100次
+            if no_progress_count >= 5 or scroll_count >= 100:
                 break
 
         floors_climbed_total = current_floor - start_floor
