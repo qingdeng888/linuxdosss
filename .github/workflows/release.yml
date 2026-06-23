@@ -31,23 +31,23 @@ jobs:
             artifact_name: LinuxDoHelper_Windows.exe
             build_name: LinuxDoHelper_Windows
 
-          # macOS 构建（Intel）
-          - os: macos-13
-            platform: macOS-Intel
-            artifact_name: LinuxDoHelper_macOS_Intel
-            build_name: LinuxDoHelper_macOS_Intel
+          # macOS 构建（Intel）- 注释掉暂不构建
+          # - os: macos-13
+          #   platform: macOS-Intel
+          #   artifact_name: LinuxDoHelper_macOS_Intel
+          #   build_name: LinuxDoHelper_macOS_Intel
 
-          # macOS 构建（Apple Silicon）
-          - os: macos-latest
-            platform: macOS-ARM
-            artifact_name: LinuxDoHelper_macOS_ARM
-            build_name: LinuxDoHelper_macOS_ARM
+          # macOS 构建（Apple Silicon）- 注释掉暂不构建
+          # - os: macos-latest
+          #   platform: macOS-ARM
+          #   artifact_name: LinuxDoHelper_macOS_ARM
+          #   build_name: LinuxDoHelper_macOS_ARM
 
-          # Linux 构建
-          - os: ubuntu-latest
-            platform: Linux
-            artifact_name: LinuxDoHelper_Linux
-            build_name: LinuxDoHelper_Linux
+          # Linux 构建 - 注释掉暂不构建
+          # - os: ubuntu-latest
+          #   platform: Linux
+          #   artifact_name: LinuxDoHelper_Linux
+          #   build_name: LinuxDoHelper_Linux
 
     steps:
       - name: Checkout code
@@ -193,16 +193,11 @@ jobs:
             ### 📦 下载说明
 
             - **Windows 用户**：下载 `LinuxDoHelper_Windows.exe`
-            - **macOS 用户（Intel）**：下载 `LinuxDoHelper_macOS_Intel.zip`
-            - **macOS 用户（Apple Silicon）**：下载 `LinuxDoHelper_macOS_ARM.zip`
-            - **Linux 用户**：下载 `LinuxDoHelper_Linux.tar.gz`
 
             ### 🚀 使用方法
 
-            1. 下载对应平台的文件
-            2. Windows：直接双击运行 `.exe` 文件
-            3. macOS：解压后双击运行（首次需要右键->打开）
-            4. Linux：解压后在终端运行 `./LinuxDoHelper_Linux`
+            1. 下载 `.exe` 文件
+            2. 双击运行
 
             ### 📝 更新内容
 
