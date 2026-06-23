@@ -247,6 +247,8 @@ class Bot:
         break_max=5,
         quick_floors_min=3,
         quick_floors_max=5,
+        work_min=10,
+        work_max=20,
     ):
         s.cfg = cfg
         s.cats = cats
@@ -263,6 +265,8 @@ class Bot:
         s.enable_break = enable_break  # 是否启用随机间断
         s.break_min = break_min  # 间断最小时间（分钟）
         s.break_max = break_max  # 间断最大时间（分钟）
+        s.work_min = work_min  # 工作最小时间（分钟）
+        s.work_max = work_max  # 工作最大时间（分钟）
         s.quick_floors_min = quick_floors_min  # 快速浏览最小层数
         s.quick_floors_max = quick_floors_max  # 快速浏览最大层数
         s.pg = None
@@ -286,8 +290,8 @@ class Bot:
         """计算下次间断的时间间隔（分钟）"""
         if not s.enable_break:
             return None
-        # 随机设置10-20分钟后进行间断
-        interval = random.uniform(10, 20)
+        # 随机设置工作时间（使用用户自定义范围）
+        interval = random.uniform(s.work_min, s.work_max)
         s.lg(f"💤 已安排下次休息：约 {int(interval)} 分钟后")
         return interval
 
@@ -2007,9 +2011,55 @@ class GUI:
             font=(FONT_FAMILY, 9),
         ).pack(side=tk.LEFT, padx=5)
 
+        # 工作时间配置（第四行）
+        work_frame = tk.Frame(mode_frame, bg="#1a1a2e")
+        work_frame.pack(fill=tk.X, padx=10, pady=(0, 8))
+
         tk.Label(
-            break_frame,
-            text="(模拟真人休息)",
+            work_frame,
+            text="  工作时间:",
+            bg="#1a1a2e",
+            fg="#eaeaea",
+            font=(FONT_FAMILY, 9),
+        ).pack(side=tk.LEFT, padx=(27, 5))
+
+        s.work_min_var = tk.StringVar(value="10")
+        tk.Entry(
+            work_frame,
+            textvariable=s.work_min_var,
+            width=5,
+            bg="#16213e",
+            fg="#eaeaea",
+            insertbackground="#eaeaea",
+        ).pack(side=tk.LEFT, padx=2)
+        tk.Label(
+            work_frame,
+            text="-",
+            bg="#1a1a2e",
+            fg="#eaeaea",
+            font=(FONT_FAMILY, 9),
+        ).pack(side=tk.LEFT)
+
+        s.work_max_var = tk.StringVar(value="20")
+        tk.Entry(
+            work_frame,
+            textvariable=s.work_max_var,
+            width=5,
+            bg="#16213e",
+            fg="#eaeaea",
+            insertbackground="#eaeaea",
+        ).pack(side=tk.LEFT, padx=2)
+        tk.Label(
+            work_frame,
+            text="分钟",
+            bg="#1a1a2e",
+            fg="#eaeaea",
+            font=(FONT_FAMILY, 9),
+        ).pack(side=tk.LEFT, padx=5)
+
+        tk.Label(
+            work_frame,
+            text="(每次工作多久)",
             bg="#1a1a2e",
             fg="#888888",
             font=(FONT_FAMILY, 8),
@@ -2636,11 +2686,24 @@ class GUI:
             break_min = float(s.break_min_var.get())
             break_max = float(s.break_max_var.get())
             if break_min < 0 or break_max < 0 or break_min > break_max:
-                messagebox.showerror("参数错误", "间断时间范围无效")
+                messagebox.showerror("参数错误", "休息时间范围无效")
                 s.start_btn.config(state=tk.NORMAL)
                 return
         except ValueError:
-            messagebox.showerror("参数错误", "间断时间必须是数字")
+            messagebox.showerror("参数错误", "休息时间必须是数字")
+            s.start_btn.config(state=tk.NORMAL)
+            return
+
+        # 获取工作时间配置
+        try:
+            work_min = float(s.work_min_var.get())
+            work_max = float(s.work_max_var.get())
+            if work_min < 0 or work_max < 0 or work_min > work_max:
+                messagebox.showerror("参数错误", "工作时间范围无效")
+                s.start_btn.config(state=tk.NORMAL)
+                return
+        except ValueError:
+            messagebox.showerror("参数错误", "工作时间必须是数字")
             s.start_btn.config(state=tk.NORMAL)
             return
 
@@ -2662,6 +2725,8 @@ class GUI:
             break_max=break_max,
             quick_floors_min=quick_floors_min,
             quick_floors_max=quick_floors_max,
+            work_min=work_min,
+            work_max=work_max,
         )
         s.th = threading.Thread(target=s._run, daemon=True)
         s.th.start()
