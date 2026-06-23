@@ -40,7 +40,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 
 # 版本信息
-VERSION = "8.5.0"
+VERSION = "8.6.0"
 GITHUB_REPO = "icysaintdx/linuxdosss"
 
 # 跨平台字体配置
@@ -242,6 +242,11 @@ class Bot:
         enable_reply=True,
         enable_wait=True,
         browse_mode="deep",
+        enable_break=False,
+        break_min=2,
+        break_max=5,
+        quick_floors_min=3,
+        quick_floors_max=5,
     ):
         s.cfg = cfg
         s.cats = cats
@@ -255,6 +260,11 @@ class Bot:
         s.enable_reply = enable_reply  # 是否启用自动回复
         s.enable_wait = enable_wait  # 是否启用等待时间
         s.browse_mode = browse_mode  # 浏览模式：deep(深度爬楼), quick(快速浏览3-5层)
+        s.enable_break = enable_break  # 是否启用随机间断
+        s.break_min = break_min  # 间断最小时间（分钟）
+        s.break_max = break_max  # 间断最大时间（分钟）
+        s.quick_floors_min = quick_floors_min  # 快速浏览最小层数
+        s.quick_floors_max = quick_floors_max  # 快速浏览最大层数
         s.pg = None
         s.run = False
         s.stats = {"topic": 0, "like": 0, "reply": 0, "like_reply": 0, "floors": 0}
@@ -262,6 +272,8 @@ class Bot:
         s.level_requirements = []  # 保存升级要求
         s.initial_level_info = None  # 保存初始等级信息用于对比
         s.start_time = None  # 记录开始时间
+        s.last_break_time = None  # 记录上次间断时间
+        s.next_break_interval = None  # 下次间断间隔（分钟）
 
     def _random_delay(s, min_sec=0.5, max_sec=2.0, reason=""):
         """防风控：随机延迟"""
@@ -269,6 +281,70 @@ class Bot:
         if reason:
             s.lg(f"[防风控] {reason}，等待 {delay:.1f}s")
         time.sleep(delay)
+
+    def _schedule_next_break(s):
+        """计算下次间断的时间间隔（分钟）"""
+        if not s.enable_break:
+            return None
+        # 随机设置10-20分钟后进行间断
+        interval = random.uniform(10, 20)
+        s.lg(f"💤 已安排下次休息：约 {int(interval)} 分钟后")
+        return interval
+
+    def _should_take_break(s):
+        """检查是否应该进行间断"""
+        if not s.enable_break or not s.run:
+            return False
+
+        # 第一次运行，设置下次间断时间
+        if s.last_break_time is None:
+            s.last_break_time = time.time()
+            s.next_break_interval = s._schedule_next_break()
+            return False
+
+        # 计算距离上次间断的时间（分钟）
+        elapsed_minutes = (time.time() - s.last_break_time) / 60
+
+        # 检查是否到达间断时间
+        if s.next_break_interval and elapsed_minutes >= s.next_break_interval:
+            return True
+
+        return False
+
+    def _take_break(s):
+        """执行随机间断"""
+        if not s.run:
+            return
+
+        # 随机间断时长
+        break_duration = random.uniform(s.break_min, s.break_max)
+        break_seconds = int(break_duration * 60)
+
+        s.lg("=" * 30)
+        s.lg(f"💤 开始休息 {int(break_duration)} 分钟（模拟真人行为）")
+        s.lg("=" * 30)
+
+        # 倒计时显示
+        start_break = time.time()
+        while s.run and (time.time() - start_break) < break_seconds:
+            remaining = break_seconds - int(time.time() - start_break)
+            remaining_mins = remaining // 60
+            remaining_secs = remaining % 60
+
+            # 更新倒计时显示
+            if s.update_countdown:
+                s.update_countdown(f"💤 休息中: {remaining_mins}:{remaining_secs:02d}")
+
+            time.sleep(1)
+
+        if s.run:
+            s.lg("=" * 30)
+            s.lg("✨ 休息结束，继续浏览")
+            s.lg("=" * 30)
+
+        # 更新间断记录，安排下次间断
+        s.last_break_time = time.time()
+        s.next_break_interval = s._schedule_next_break()
 
     def start(s):
         # 确保先关闭旧的浏览器实例
@@ -798,27 +874,29 @@ class Bot:
         return floors_climbed_total
 
     def _scroll_page_quick(s):
-        """快速浏览模式 - 只爬3-5层就返回，用于增加浏览话题数量
+        """快速浏览模式 - 只爬指定层数就返回，用于增加浏览话题数量
         返回值: 实际爬过的楼层数（结束楼层 - 开始楼层）
         """
         floor_info = s.get_floor_info()
         if not floor_info:
-            s.lg("⚠ 无法获取楼层信息，快速滚动3次")
-            # 快速滚动3次，假设爬了3层
-            for i in range(3):
+            # 使用默认值
+            default_climb = s.quick_floors_min
+            s.lg(f"⚠ 无法获取楼层信息，快速滚动{default_climb}次")
+            # 快速滚动指定次数
+            for i in range(default_climb):
                 if not s.run:
                     break
                 time.sleep(random.uniform(1, 2))
                 s.pg.run_js(f"window.scrollBy(0, {random.randint(400, 800)})")
-            s.stats["floors"] += 3
+            s.stats["floors"] += default_climb
             if s.update_progress:
                 s.update_progress(s.stats)
             s._update_countdown_display()
-            return 3
+            return default_climb
 
         total_floors = floor_info["total"]
         start_floor = floor_info["current"]  # 记录开始楼层
-        target_climb = random.randint(3, 5)  # 目标爬3-5层
+        target_climb = random.randint(s.quick_floors_min, s.quick_floors_max)  # 自定义层数范围
 
         s.lg(
             f"[快速浏览] 开始楼层: {start_floor}，目标爬: {target_climb} 层 (总楼层: {total_floors})"
@@ -1264,6 +1342,8 @@ class Bot:
                 features.append("自动回复")
             if s.enable_wait:
                 features.append("等待延迟")
+            if s.enable_break:
+                features.append(f"随机间断({s.break_min}-{s.break_max}分钟)")
             s.lg(f"启用功能: {', '.join(features) if features else '仅浏览'}")
 
             s.lg(f"开始浏览 {len(enabled)} 个板块")
@@ -1272,6 +1352,13 @@ class Bot:
             # 无尽循环板块
             while s.run:
                 for cat in enabled:
+                    if not s.run:
+                        break
+
+                    # 检查是否需要间断
+                    if s._should_take_break():
+                        s._take_break()
+
                     if not s.run:
                         break
 
@@ -1862,6 +1949,72 @@ class GUI:
             font=(FONT_FAMILY, 9),
         ).pack(side=tk.LEFT)
 
+        # 随机间断配置（第三行）
+        break_frame = tk.Frame(mode_frame, bg="#1a1a2e")
+        break_frame.pack(fill=tk.X, padx=10, pady=(0, 8))
+
+        s.enable_break_var = tk.BooleanVar(value=False)
+        tk.Checkbutton(
+            break_frame,
+            text="启用随机间断",
+            variable=s.enable_break_var,
+            bg="#1a1a2e",
+            fg="#eaeaea",
+            selectcolor="#16213e",
+            activebackground="#1a1a2e",
+            font=(FONT_FAMILY, 9),
+        ).pack(side=tk.LEFT, padx=(0, 10))
+
+        tk.Label(
+            break_frame,
+            text="间断时间:",
+            bg="#1a1a2e",
+            fg="#eaeaea",
+            font=(FONT_FAMILY, 9),
+        ).pack(side=tk.LEFT, padx=5)
+
+        s.break_min_var = tk.StringVar(value="2")
+        tk.Entry(
+            break_frame,
+            textvariable=s.break_min_var,
+            width=5,
+            bg="#16213e",
+            fg="#eaeaea",
+            insertbackground="#eaeaea",
+        ).pack(side=tk.LEFT, padx=2)
+        tk.Label(
+            break_frame,
+            text="-",
+            bg="#1a1a2e",
+            fg="#eaeaea",
+            font=(FONT_FAMILY, 9),
+        ).pack(side=tk.LEFT)
+
+        s.break_max_var = tk.StringVar(value="5")
+        tk.Entry(
+            break_frame,
+            textvariable=s.break_max_var,
+            width=5,
+            bg="#16213e",
+            fg="#eaeaea",
+            insertbackground="#eaeaea",
+        ).pack(side=tk.LEFT, padx=2)
+        tk.Label(
+            break_frame,
+            text="分钟",
+            bg="#1a1a2e",
+            fg="#eaeaea",
+            font=(FONT_FAMILY, 9),
+        ).pack(side=tk.LEFT, padx=5)
+
+        tk.Label(
+            break_frame,
+            text="(模拟真人休息)",
+            bg="#1a1a2e",
+            fg="#888888",
+            font=(FONT_FAMILY, 8),
+        ).pack(side=tk.LEFT, padx=5)
+
         # 浏览模式选择（第二行）
         browse_mode_inner = tk.Frame(mode_frame, bg="#1a1a2e")
         browse_mode_inner.pack(fill=tk.X, padx=10, pady=(0, 8))
@@ -1891,7 +2044,7 @@ class GUI:
 
         tk.Radiobutton(
             browse_mode_inner,
-            text="快速浏览（3-5层换帖）",
+            text="快速浏览",
             variable=s.browse_mode_var,
             value="quick",
             bg="#1a1a2e",
@@ -1904,10 +2057,46 @@ class GUI:
 
         tk.Label(
             browse_mode_inner,
-            text="(快速模式增加浏览话题数)",
+            text="(爬",
             bg="#1a1a2e",
-            fg="#888888",
-            font=(FONT_FAMILY, 8),
+            fg="#eaeaea",
+            font=(FONT_FAMILY, 9),
+        ).pack(side=tk.LEFT)
+
+        s.quick_floors_min_var = tk.StringVar(value="3")
+        tk.Entry(
+            browse_mode_inner,
+            textvariable=s.quick_floors_min_var,
+            width=4,
+            bg="#16213e",
+            fg="#eaeaea",
+            insertbackground="#eaeaea",
+        ).pack(side=tk.LEFT, padx=2)
+
+        tk.Label(
+            browse_mode_inner,
+            text="-",
+            bg="#1a1a2e",
+            fg="#eaeaea",
+            font=(FONT_FAMILY, 9),
+        ).pack(side=tk.LEFT)
+
+        s.quick_floors_max_var = tk.StringVar(value="5")
+        tk.Entry(
+            browse_mode_inner,
+            textvariable=s.quick_floors_max_var,
+            width=4,
+            bg="#16213e",
+            fg="#eaeaea",
+            insertbackground="#eaeaea",
+        ).pack(side=tk.LEFT, padx=2)
+
+        tk.Label(
+            browse_mode_inner,
+            text="层换帖)",
+            bg="#1a1a2e",
+            fg="#eaeaea",
+            font=(FONT_FAMILY, 9),
         ).pack(side=tk.LEFT, padx=5)
 
         # 控制栏
@@ -2428,6 +2617,33 @@ class GUI:
         enable_wait = s.enable_wait_var.get()
         browse_mode = s.browse_mode_var.get()
 
+        # 获取快速浏览层数配置
+        try:
+            quick_floors_min = int(s.quick_floors_min_var.get())
+            quick_floors_max = int(s.quick_floors_max_var.get())
+            if quick_floors_min < 1 or quick_floors_max < 1 or quick_floors_min > quick_floors_max:
+                messagebox.showerror("参数错误", "快速浏览层数范围无效（最小值必须 ≥1 且不大于最大值）")
+                s.start_btn.config(state=tk.NORMAL)
+                return
+        except ValueError:
+            messagebox.showerror("参数错误", "快速浏览层数必须是整数")
+            s.start_btn.config(state=tk.NORMAL)
+            return
+
+        # 获取随机间断配置
+        enable_break = s.enable_break_var.get()
+        try:
+            break_min = float(s.break_min_var.get())
+            break_max = float(s.break_max_var.get())
+            if break_min < 0 or break_max < 0 or break_min > break_max:
+                messagebox.showerror("参数错误", "间断时间范围无效")
+                s.start_btn.config(state=tk.NORMAL)
+                return
+        except ValueError:
+            messagebox.showerror("参数错误", "间断时间必须是数字")
+            s.start_btn.config(state=tk.NORMAL)
+            return
+
         s.bot = Bot(
             s.cfg,
             s.cats,
@@ -2441,6 +2657,11 @@ class GUI:
             enable_reply=enable_reply,
             enable_wait=enable_wait,
             browse_mode=browse_mode,
+            enable_break=enable_break,
+            break_min=break_min,
+            break_max=break_max,
+            quick_floors_min=quick_floors_min,
+            quick_floors_max=quick_floors_max,
         )
         s.th = threading.Thread(target=s._run, daemon=True)
         s.th.start()

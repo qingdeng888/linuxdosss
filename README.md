@@ -1,10 +1,10 @@
-# Linux.do 论坛刷帖助手 v8.5
+# Linux.do 论坛刷帖助手 v8.6
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.8+-blue.svg" alt="Python">
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg" alt="Platform">
   <img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License">
-  <img src="https://img.shields.io/badge/Version-8.5-orange.svg" alt="Version">
+  <img src="https://img.shields.io/badge/Version-8.6-orange.svg" alt="Version">
 </p>
 
 <p align="center">
@@ -24,6 +24,15 @@
 > **建议**：仅使用自动浏览和点赞功能，谨慎开启自动回复。
 
 ---
+
+## 🎉 v8.6 新功能
+
+- 💤 **随机间断功能**：运行过程中随机暂停休息，模拟真人使用习惯
+- ⏱️ **智能休息安排**：每隔 10-20 分钟随机休息 2-5 分钟（可自定义）
+- 🎯 **更强防检测**：休息时间不计入总运行时间，行为更加自然
+- 📊 **倒计时显示**：休息期间显示倒计时，状态一目了然
+- 🔧 **快速浏览层数可自定义**：原固定 3-5 层，现在可自由设置（如 1-3 层、5-10 层等）
+- 📝 **详细说明文档**：查看 [BREAK_FEATURE.md](BREAK_FEATURE.md) 和 [QUICK_BROWSE_CUSTOM.md](QUICK_BROWSE_CUSTOM.md) 了解详情
 
 ## 🎉 v8.5 新功能
 
